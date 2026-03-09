@@ -17,4 +17,31 @@ public class NullableAssignmentAnalyzerTests
         };
         await test.RunAsync();
     }
+
+    [Fact]
+    public async Task NullableProperty_AssignedNonNullableInConstructor_Reports()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? {|#0:Name|} { get; set; }
+
+    public MyClass(string name)
+    {
+        Name = name;
+    }
+}
+",
+            ExpectedDiagnostics =
+            {
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(0)
+                    .WithArguments("Name"),
+            },
+        };
+        await test.RunAsync();
+    }
 }
