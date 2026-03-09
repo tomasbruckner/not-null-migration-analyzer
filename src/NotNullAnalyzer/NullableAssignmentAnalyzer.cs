@@ -56,11 +56,7 @@ public sealed class NullableAssignmentAnalyzer : DiagnosticAnalyzer
                 if (TryGetTargetSymbol(assignment.Target, out var targetSymbol) &&
                     tracker.TryGetValue(targetSymbol!, out var info))
                 {
-                    info.AssignmentCount++;
-                    if (IsNullableValue(assignment.Value))
-                    {
-                        info.HasNullableAssignment = true;
-                    }
+                    info.RecordAssignment(IsNullableValue(assignment.Value));
                 }
             }, OperationKind.SimpleAssignment, OperationKind.CompoundAssignment);
 
@@ -72,11 +68,7 @@ public sealed class NullableAssignmentAnalyzer : DiagnosticAnalyzer
                 {
                     if (tracker.TryGetValue(property, out var info))
                     {
-                        info.AssignmentCount++;
-                        if (IsNullableValue(initializer.Value))
-                        {
-                            info.HasNullableAssignment = true;
-                        }
+                        info.RecordAssignment(IsNullableValue(initializer.Value));
                     }
                 }
             }, OperationKind.PropertyInitializer);
@@ -89,11 +81,7 @@ public sealed class NullableAssignmentAnalyzer : DiagnosticAnalyzer
                 {
                     if (tracker.TryGetValue(field, out var info))
                     {
-                        info.AssignmentCount++;
-                        if (IsNullableValue(initializer.Value))
-                        {
-                            info.HasNullableAssignment = true;
-                        }
+                        info.RecordAssignment(IsNullableValue(initializer.Value));
                     }
                 }
             }, OperationKind.FieldInitializer);
