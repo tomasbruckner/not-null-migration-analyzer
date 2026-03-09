@@ -1,0 +1,7 @@
+## .NET
+bin/
+obj/
+*.nupkg
+*.user
+*.suo
+.vs/
