@@ -81,6 +81,8 @@ The analyzer uses the Roslyn IOperation API to track all assignments to nullable
 
 For interface properties, it aggregates across all implementations — reporting only when every implementation assigns exclusively non-nullable values.
 
+For a detailed breakdown of all edge cases, see [docs/architecture.md](docs/architecture.md).
+
 ## Configuration
 
 You can change the severity or disable the rule in your `.editorconfig`:
