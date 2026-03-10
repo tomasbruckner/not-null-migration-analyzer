@@ -9,9 +9,18 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DevelopmentDependency>true</DevelopmentDependency>
-    <PackageId>NotNullAnalyzer</PackageId>
-    <Description>Roslyn analyzer that detects nullable members which can be made non-nullable</Description>
     <NoWarn>$(NoWarn);NU5128</NoWarn>
+
+    <!-- NuGet package metadata -->
+    <PackageId>NotNullMigration.Analyzer</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Tomas Bruckner</Authors>
+    <Description>Roslyn analyzer that helps migrate your C# projects to nullable-enabled (Nullable=enable) by detecting nullable members that can safely be made non-nullable</Description>
+    <PackageTags>roslyn;analyzer;nullable;csharp;migration</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/tomasbruckner/not-null-migration-analyzer</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tomasbruckner/not-null-migration-analyzer</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +35,10 @@
 
   <ItemGroup>
     <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" Visible="false" />
   </ItemGroup>
 
 </Project>
