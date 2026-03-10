@@ -2,6 +2,15 @@
 bin/
 obj/
 *.nupkg
+*.snupkg
 *.user
 *.suo
 .vs/
+
+## JetBrains
+.idea/
+*.DotSettings.user
+
+## Test results
+TestResults/
+BenchmarkDotNet.Artifacts/
