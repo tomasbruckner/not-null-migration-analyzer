@@ -11,6 +11,7 @@
     <DevelopmentDependency>true</DevelopmentDependency>
     <PackageId>NotNullAnalyzer</PackageId>
     <Description>Roslyn analyzer that detects nullable members which can be made non-nullable</Description>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

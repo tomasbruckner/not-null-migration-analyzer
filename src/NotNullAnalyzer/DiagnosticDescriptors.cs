@@ -10,5 +10,6 @@ internal static class DiagnosticDescriptors
         messageFormat: "'{0}' is declared nullable but is only assigned non-nullable values",
         category: "Design",
         defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: new[] { WellKnownDiagnosticTags.CompilationEnd });
 }
