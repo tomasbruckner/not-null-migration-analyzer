@@ -326,4 +326,142 @@ public class MyClass
         };
         await test.RunAsync();
     }
+
+    // ========== null! tests ==========
+
+    [Fact]
+    public async Task NullableProperty_AssignedNullForgiving_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? Name { get; set; }
+
+    public MyClass()
+    {
+        Name = null!;
+    }
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableField_AssignedNullForgivingInitializer_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    private string? _name = null!;
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_AssignedNullForgivingAndNonNull_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? Name { get; set; }
+
+    public MyClass(string name) { Name = name; }
+    public void Reset() { Name = null!; }
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    // ========== Inheritance tests ==========
+
+    [Fact]
+    public async Task NullableProperty_OverridesVirtualBase_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class BaseClass
+{
+    public virtual string? Name { get; set; }
+}
+
+public class DerivedClass : BaseClass
+{
+    public override string? Name { get; set; }
+
+    public DerivedClass(string name)
+    {
+        Name = name;
+    }
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_ImplementsInterface_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public interface INameable
+{
+    string? Name { get; set; }
+}
+
+public class MyClass : INameable
+{
+    public string? Name { get; set; }
+
+    public MyClass(string name)
+    {
+        Name = name;
+    }
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_OverridesAbstract_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public abstract class BaseClass
+{
+    public abstract string? Name { get; set; }
+}
+
+public class DerivedClass : BaseClass
+{
+    public override string? Name { get; set; }
+
+    public DerivedClass(string name)
+    {
+        Name = name;
+    }
+}
+",
+        };
+        await test.RunAsync();
+    }
 }

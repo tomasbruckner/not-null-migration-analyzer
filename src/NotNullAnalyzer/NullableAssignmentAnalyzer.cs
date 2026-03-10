@@ -32,6 +32,9 @@ public sealed class NullableAssignmentAnalyzer : DiagnosticAnalyzer
                 switch (symbol)
                 {
                     case IPropertySymbol property:
+                        // Skip properties whose nullability is constrained by a base type or interface
+                        if (property.IsOverride || ImplementsInterfaceMember(property))
+                            return;
                         type = property.Type;
                         location = property.Locations.FirstOrDefault()!;
                         break;
@@ -115,6 +118,25 @@ public sealed class NullableAssignmentAnalyzer : DiagnosticAnalyzer
                 }
             });
         });
+    }
+
+    private static bool ImplementsInterfaceMember(IPropertySymbol property)
+    {
+        var containingType = property.ContainingType;
+        if (containingType == null)
+            return false;
+
+        foreach (var iface in containingType.AllInterfaces)
+        {
+            foreach (var member in iface.GetMembers().OfType<IPropertySymbol>())
+            {
+                var impl = containingType.FindImplementationForInterfaceMember(member);
+                if (SymbolEqualityComparer.Default.Equals(impl, property))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool TryGetTargetSymbol(IOperation target, out ISymbol? symbol)
