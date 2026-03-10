@@ -148,4 +148,112 @@ public class Consumer
         };
         await test.RunAsync();
     }
+
+    [Fact]
+    public async Task NullableProperty_AssignedNull_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? Name { get; set; }
+
+    public void Reset() { Name = null; }
+    public MyClass(string name) { Name = name; }
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_AssignedFromNullableVariable_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? Name { get; set; }
+
+    public void Set(string? value) { Name = value; }
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_NoAssignments_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? Name { get; set; }
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_AssignedFromNullableMethod_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? Name { get; set; }
+
+    public void Load()
+    {
+        Name = GetName();
+    }
+
+    private string? GetName() => null;
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_WithNullInitializer_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? Name { get; set; } = null;
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NonNullableProperty_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string Name { get; set; } = ""default"";
+}
+",
+        };
+        await test.RunAsync();
+    }
 }
