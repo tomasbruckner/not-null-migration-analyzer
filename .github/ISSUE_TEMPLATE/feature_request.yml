@@ -1,0 +1,24 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What would you like the analyzer to do?
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Why is this feature important to you?
+    validations:
+      required: true
+  - type: textarea
+    id: code-example
+    attributes:
+      label: Code Example
+      description: Optional code showing the desired behavior.
+      render: csharp
