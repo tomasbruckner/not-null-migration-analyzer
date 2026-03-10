@@ -167,4 +167,55 @@ public class MyClass
         };
         await test.RunAsync();
     }
+
+    [Fact]
+    public async Task CodeFix_RemovesNullableAnnotation_InterfaceAndImplementation()
+    {
+        var test = new CSharpCodeFixTest<NullableAssignmentAnalyzer, NullableAssignmentCodeFixProvider, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public interface INameable
+{
+    string? {|#0:Name|} { get; set; }
+}
+
+public class MyClass : INameable
+{
+    public string? {|#1:Name|} { get; set; }
+
+    public MyClass(string name)
+    {
+        Name = name;
+    }
+}
+",
+            FixedCode = @"
+#nullable enable
+public interface INameable
+{
+    string Name { get; set; }
+}
+
+public class MyClass : INameable
+{
+    public string Name { get; set; }
+
+    public MyClass(string name)
+    {
+        Name = name;
+    }
+}
+",
+            ExpectedDiagnostics =
+            {
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(0)
+                    .WithLocation(1)
+                    .WithArguments("Name"),
+            },
+            CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
+        };
+        await test.RunAsync();
+    }
 }

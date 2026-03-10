@@ -34,12 +34,95 @@ public sealed class NullableAssignmentCodeFixProvider : CodeFixProvider
 
         if (declaration == null) return;
 
-        context.RegisterCodeFix(
-            CodeAction.Create(
-                title: "Remove nullable annotation",
-                createChangedDocument: ct => RemoveNullableAnnotationAsync(context.Document, root, declaration, ct),
-                equivalenceKey: "RemoveNullableAnnotation"),
-            diagnostic);
+        // If there are additional locations, this is an interface property with implementations
+        if (diagnostic.AdditionalLocations.Count > 0)
+        {
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    title: "Remove nullable annotation from interface and implementations",
+                    createChangedSolution: ct => RemoveNullableFromInterfaceAndImplsAsync(
+                        context.Document, diagnostic, ct),
+                    equivalenceKey: "RemoveNullableAnnotation"),
+                diagnostic);
+        }
+        else
+        {
+            context.RegisterCodeFix(
+                CodeAction.Create(
+                    title: "Remove nullable annotation",
+                    createChangedDocument: ct => RemoveNullableAnnotationAsync(context.Document, root, declaration, ct),
+                    equivalenceKey: "RemoveNullableAnnotation"),
+                diagnostic);
+        }
+    }
+
+    private static async Task<Solution> RemoveNullableFromInterfaceAndImplsAsync(
+        Document document,
+        Diagnostic diagnostic,
+        CancellationToken cancellationToken)
+    {
+        var solution = document.Project.Solution;
+
+        // Collect all locations: primary (interface) + additional (implementations)
+        var allLocations = new[] { diagnostic.Location }
+            .Concat(diagnostic.AdditionalLocations)
+            .ToList();
+
+        // Group by document to batch changes per file
+        foreach (var locationGroup in allLocations.GroupBy(l => l.SourceTree?.FilePath))
+        {
+            var filePath = locationGroup.Key;
+            if (filePath == null) continue;
+
+            var doc = solution.Projects
+                .SelectMany(p => p.Documents)
+                .FirstOrDefault(d => d.FilePath == filePath);
+
+            // Fallback: if file path doesn't match, try matching by syntax tree
+            if (doc == null)
+            {
+                foreach (var loc in locationGroup)
+                {
+                    var tree = loc.SourceTree;
+                    if (tree == null) continue;
+
+                    doc = solution.GetDocument(tree);
+                    if (doc != null) break;
+                }
+            }
+
+            if (doc == null) continue;
+
+            var root = await doc.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            if (root == null) continue;
+
+            var newRoot = root;
+            var nodesToReplace = new System.Collections.Generic.Dictionary<SyntaxNode, SyntaxNode>();
+
+            foreach (var location in locationGroup)
+            {
+                var node = newRoot.FindNode(location.SourceSpan);
+                var decl = node.AncestorsAndSelf()
+                    .FirstOrDefault(n => n is PropertyDeclarationSyntax or FieldDeclarationSyntax);
+
+                if (decl is PropertyDeclarationSyntax prop)
+                {
+                    nodesToReplace[prop] = MakePropertyNonNullable(prop);
+                }
+                else if (decl is FieldDeclarationSyntax field)
+                {
+                    nodesToReplace[field] = MakeFieldNonNullable(field);
+                }
+            }
+
+            newRoot = newRoot.ReplaceNodes(
+                nodesToReplace.Keys,
+                (original, _) => nodesToReplace[original]);
+
+            solution = solution.WithDocumentSyntaxRoot(doc.Id, newRoot);
+        }
+
+        return solution;
     }
 
     private static Task<Document> RemoveNullableAnnotationAsync(
@@ -53,15 +136,15 @@ public sealed class NullableAssignmentCodeFixProvider : CodeFixProvider
         switch (declaration)
         {
             case PropertyDeclarationSyntax property:
-                newRoot = HandleProperty(root, property);
+                newRoot = root.ReplaceNode(property, MakePropertyNonNullable(property));
                 break;
             case FieldDeclarationSyntax field:
-                newRoot = HandleField(root, field);
+                newRoot = root.ReplaceNode(field, MakeFieldNonNullable(field));
                 break;
             default:
                 var parentField = declaration.AncestorsAndSelf().OfType<FieldDeclarationSyntax>().FirstOrDefault();
                 if (parentField != null)
-                    newRoot = HandleField(root, parentField);
+                    newRoot = root.ReplaceNode(parentField, MakeFieldNonNullable(parentField));
                 else
                     return Task.FromResult(document);
                 break;
@@ -70,7 +153,7 @@ public sealed class NullableAssignmentCodeFixProvider : CodeFixProvider
         return Task.FromResult(document.WithSyntaxRoot(newRoot));
     }
 
-    private static SyntaxNode HandleProperty(SyntaxNode root, PropertyDeclarationSyntax property)
+    private static PropertyDeclarationSyntax MakePropertyNonNullable(PropertyDeclarationSyntax property)
     {
         var newProperty = property;
 
@@ -99,10 +182,10 @@ public sealed class NullableAssignmentCodeFixProvider : CodeFixProvider
             }
         }
 
-        return root.ReplaceNode(property, newProperty);
+        return newProperty;
     }
 
-    private static SyntaxNode HandleField(SyntaxNode root, FieldDeclarationSyntax field)
+    private static FieldDeclarationSyntax MakeFieldNonNullable(FieldDeclarationSyntax field)
     {
         var declaration = field.Declaration;
 
@@ -125,10 +208,9 @@ public sealed class NullableAssignmentCodeFixProvider : CodeFixProvider
             newDeclaration = newDeclaration.WithVariables(
                 SyntaxFactory.SeparatedList(newVariables));
 
-            var newField = field.WithDeclaration(newDeclaration);
-            return root.ReplaceNode(field, newField);
+            return field.WithDeclaration(newDeclaration);
         }
 
-        return root;
+        return field;
     }
 }

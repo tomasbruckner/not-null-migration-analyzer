@@ -414,7 +414,76 @@ public class DerivedClass : BaseClass
     }
 
     [Fact]
-    public async Task NullableProperty_ImplementsInterface_DoesNotReport()
+    public async Task NullableProperty_ImplementsInterface_AllImplsNonNullable_Reports()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public interface INameable
+{
+    string? {|#0:Name|} { get; set; }
+}
+
+public class MyClass : INameable
+{
+    public string? {|#1:Name|} { get; set; }
+
+    public MyClass(string name)
+    {
+        Name = name;
+    }
+}
+",
+            ExpectedDiagnostics =
+            {
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(0)
+                    .WithLocation(1)
+                    .WithArguments("Name"),
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_ImplementsInterface_MultipleImplsAllNonNullable_Reports()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public interface INameable
+{
+    string? {|#0:Name|} { get; set; }
+}
+
+public class ClassA : INameable
+{
+    public string? {|#1:Name|} { get; set; }
+    public ClassA(string name) { Name = name; }
+}
+
+public class ClassB : INameable
+{
+    public string? {|#2:Name|} { get; set; }
+    public ClassB(string name) { Name = name; }
+}
+",
+            ExpectedDiagnostics =
+            {
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(0)
+                    .WithLocation(1)
+                    .WithLocation(2)
+                    .WithArguments("Name"),
+            },
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_ImplementsInterface_OneImplNullable_DoesNotReport()
     {
         var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
         {
@@ -425,14 +494,33 @@ public interface INameable
     string? Name { get; set; }
 }
 
-public class MyClass : INameable
+public class ClassA : INameable
 {
     public string? Name { get; set; }
+    public ClassA(string name) { Name = name; }
+}
 
-    public MyClass(string name)
-    {
-        Name = name;
+public class ClassB : INameable
+{
+    public string? Name { get; set; }
+    public void Clear() { Name = null; }
+    public ClassB(string name) { Name = name; }
+}
+",
+        };
+        await test.RunAsync();
     }
+
+    [Fact]
+    public async Task NullableProperty_ImplementsInterface_NoImplementations_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public interface INameable
+{
+    string? Name { get; set; }
 }
 ",
         };
