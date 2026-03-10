@@ -54,6 +54,21 @@ public class User
 }
 ```
 
+## Applying Code Fixes
+
+### IDE (Visual Studio / Rider / VS Code)
+
+Hover over the warning and use the lightbulb (Quick Actions) to apply **"Remove nullable annotation"**. You can also fix all occurrences at once via **Fix All in Document / Project / Solution**.
+
+### CLI
+
+Use `dotnet format` to apply all fixes from the command line:
+
+```bash
+# Fix all NOTNULL001 warnings in the solution
+dotnet format analyzers --diagnostics NOTNULL001 --severity warn
+```
+
 ## Rules
 
 | Rule ID | Category | Severity | Description |
