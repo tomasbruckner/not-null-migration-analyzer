@@ -64,6 +64,12 @@ public sealed class NullableAssignmentAnalyzer : DiagnosticAnalyzer
             compilationContext.RegisterOperationAction(operationContext =>
             {
                 var initializer = (IPropertyInitializerOperation)operationContext.Operation;
+
+                // Skip `= null` initializers — they are just the implicit default
+                // for a nullable type and should not count as real assignments.
+                if (IsNullLiteralInitializer(initializer.Value))
+                    return;
+
                 foreach (var property in initializer.InitializedProperties)
                 {
                     if (tracker.TryGetValue(property, out var info))
@@ -77,6 +83,12 @@ public sealed class NullableAssignmentAnalyzer : DiagnosticAnalyzer
             compilationContext.RegisterOperationAction(operationContext =>
             {
                 var initializer = (IFieldInitializerOperation)operationContext.Operation;
+
+                // Skip `= null` initializers — they are just the implicit default
+                // for a nullable type and should not count as real assignments.
+                if (IsNullLiteralInitializer(initializer.Value))
+                    return;
+
                 foreach (var field in initializer.InitializedFields)
                 {
                     if (tracker.TryGetValue(field, out var info))
@@ -119,6 +131,11 @@ public sealed class NullableAssignmentAnalyzer : DiagnosticAnalyzer
                 symbol = null;
                 return false;
         }
+    }
+
+    private static bool IsNullLiteralInitializer(IOperation value)
+    {
+        return value.ConstantValue.HasValue && value.ConstantValue.Value == null;
     }
 
     private static bool IsNullableValue(IOperation value)
