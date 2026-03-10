@@ -256,4 +256,74 @@ public class MyClass
         };
         await test.RunAsync();
     }
+
+    [Fact]
+    public async Task NullableProperty_InitAccessor_AssignedNonNullable_Reports()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? {|#0:Name|} { get; init; }
+
+    public MyClass(string name)
+    {
+        Name = name;
+    }
+}
+",
+            ExpectedDiagnostics =
+            {
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(0)
+                    .WithArguments("Name"),
+            },
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net60,
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableProperty_MixedNullAndNonNull_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? Name { get; set; }
+
+    public MyClass(string name)
+    {
+        Name = name;
+    }
+
+    public void Clear()
+    {
+        Name = null;
+    }
+}
+",
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullableField_AssignedDefault_DoesNotReport()
+    {
+        var test = new CSharpAnalyzerTest<NullableAssignmentAnalyzer, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    private string? _name = default;
+}
+",
+        };
+        await test.RunAsync();
+    }
 }

@@ -127,4 +127,44 @@ public class MyClass
         };
         await test.RunAsync();
     }
+
+    [Fact]
+    public async Task CodeFix_RemovesNullableAnnotation_Field()
+    {
+        var test = new CSharpCodeFixTest<NullableAssignmentAnalyzer, NullableAssignmentCodeFixProvider, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    private string? {|#0:_name|};
+
+    public MyClass(string name)
+    {
+        _name = name;
+    }
+}
+",
+            FixedCode = @"
+#nullable enable
+public class MyClass
+{
+    private string _name;
+
+    public MyClass(string name)
+    {
+        _name = name;
+    }
+}
+",
+            ExpectedDiagnostics =
+            {
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(0)
+                    .WithArguments("_name"),
+            },
+            CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
+        };
+        await test.RunAsync();
+    }
 }
