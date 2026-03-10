@@ -218,4 +218,135 @@ public class MyClass : INameable
         };
         await test.RunAsync();
     }
+
+    [Fact]
+    public async Task CodeFix_RemovesNullableAnnotation_NullableGenericForm()
+    {
+        var test = new CSharpCodeFixTest<NullableAssignmentAnalyzer, NullableAssignmentCodeFixProvider, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+using System;
+public class MyClass
+{
+    public Nullable<int> {|#0:Count|} { get; set; }
+
+    public MyClass()
+    {
+        Count = 5;
+    }
+}
+",
+            FixedCode = @"
+#nullable enable
+using System;
+public class MyClass
+{
+    public int Count { get; set; }
+
+    public MyClass()
+    {
+        Count = 5;
+    }
+}
+",
+            ExpectedDiagnostics =
+            {
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(0)
+                    .WithArguments("Count"),
+            },
+            CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task CodeFix_RemovesNullableAnnotation_NullableGenericForm_DateTime()
+    {
+        var test = new CSharpCodeFixTest<NullableAssignmentAnalyzer, NullableAssignmentCodeFixProvider, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+using System;
+public class MyClass
+{
+    public Nullable<DateTime> {|#0:Created|} { get; set; }
+
+    public MyClass()
+    {
+        Created = DateTime.Now;
+    }
+}
+",
+            FixedCode = @"
+#nullable enable
+using System;
+public class MyClass
+{
+    public DateTime Created { get; set; }
+
+    public MyClass()
+    {
+        Created = DateTime.Now;
+    }
+}
+",
+            ExpectedDiagnostics =
+            {
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(0)
+                    .WithArguments("Created"),
+            },
+            CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
+        };
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task CodeFix_FixAll_MultipleDiagnosticsInOneDocument()
+    {
+        var test = new CSharpCodeFixTest<NullableAssignmentAnalyzer, NullableAssignmentCodeFixProvider, DefaultVerifier>
+        {
+            TestCode = @"
+#nullable enable
+public class MyClass
+{
+    public string? {|#0:Name|} { get; set; }
+    public int? {|#1:Count|} { get; set; }
+
+    public MyClass(string name, int count)
+    {
+        Name = name;
+        Count = count;
+    }
+}
+",
+            FixedCode = @"
+#nullable enable
+public class MyClass
+{
+    public string Name { get; set; }
+    public int Count { get; set; }
+
+    public MyClass(string name, int count)
+    {
+        Name = name;
+        Count = count;
+    }
+}
+",
+            ExpectedDiagnostics =
+            {
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(0)
+                    .WithArguments("Name"),
+                new DiagnosticResult(DiagnosticDescriptors.NOTNULL001)
+                    .WithLocation(1)
+                    .WithArguments("Count"),
+            },
+            CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
+        };
+        await test.RunAsync();
+    }
 }

@@ -153,15 +153,41 @@ public sealed class NullableAssignmentCodeFixProvider : CodeFixProvider
         return Task.FromResult(document.WithSyntaxRoot(newRoot));
     }
 
+    private static TypeSyntax UnwrapNullableType(TypeSyntax type)
+    {
+        // Handle T? shorthand
+        if (type is NullableTypeSyntax nullableType)
+            return nullableType.ElementType.WithTriviaFrom(nullableType);
+
+        // Handle Nullable<T> generic form
+        if (type is GenericNameSyntax generic &&
+            generic.Identifier.Text == "Nullable" &&
+            generic.TypeArgumentList.Arguments.Count == 1)
+        {
+            return generic.TypeArgumentList.Arguments[0].WithTriviaFrom(generic);
+        }
+
+        // Handle System.Nullable<T> qualified form
+        if (type is QualifiedNameSyntax qualified &&
+            qualified.Right is GenericNameSyntax qualifiedGeneric &&
+            qualifiedGeneric.Identifier.Text == "Nullable" &&
+            qualifiedGeneric.TypeArgumentList.Arguments.Count == 1)
+        {
+            return qualifiedGeneric.TypeArgumentList.Arguments[0].WithTriviaFrom(qualified);
+        }
+
+        return type;
+    }
+
     private static PropertyDeclarationSyntax MakePropertyNonNullable(PropertyDeclarationSyntax property)
     {
         var newProperty = property;
 
         // Remove nullable annotation from type
-        if (property.Type is NullableTypeSyntax nullableType)
+        var unwrapped = UnwrapNullableType(property.Type);
+        if (unwrapped != property.Type)
         {
-            newProperty = newProperty.WithType(
-                nullableType.ElementType.WithTriviaFrom(nullableType));
+            newProperty = newProperty.WithType(unwrapped);
         }
 
         // Remove `= null` initializer if present
@@ -188,11 +214,11 @@ public sealed class NullableAssignmentCodeFixProvider : CodeFixProvider
     private static FieldDeclarationSyntax MakeFieldNonNullable(FieldDeclarationSyntax field)
     {
         var declaration = field.Declaration;
+        var unwrapped = UnwrapNullableType(declaration.Type);
 
-        if (declaration.Type is NullableTypeSyntax nullableType)
+        if (unwrapped != declaration.Type)
         {
-            var newDeclaration = declaration.WithType(
-                nullableType.ElementType.WithTriviaFrom(nullableType));
+            var newDeclaration = declaration.WithType(unwrapped);
 
             var newVariables = newDeclaration.Variables.Select(v =>
             {
