@@ -14,3 +14,6 @@ obj/
 ## Test results
 TestResults/
 BenchmarkDotNet.Artifacts/
+
+## Internal docs
+docs/plans/
